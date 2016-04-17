@@ -17,7 +17,7 @@ nothing more
 # How to run
 From the source directory issue the following command:
 
-`-classpath . Fifteen` 
+`java -classpath . Fifteen` 
 
 # Note
 
