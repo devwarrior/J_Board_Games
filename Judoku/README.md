@@ -18,7 +18,7 @@ nothing more
 # How to run
 From the source directory issue the following command:
 
-`-classpath . Judoku` 
+`java -classpath . Judoku` 
 
 # Note
 
