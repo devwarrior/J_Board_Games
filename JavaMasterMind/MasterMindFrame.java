@@ -6,449 +6,492 @@
  * @author
  * @version 1.00 05/04/29
  */
-
 import java.awt.*;
-import java.applet.*;
 import java.awt.event.*;
-import java.util.Random;
 
-//
-//	La classa Board implementa il disegno della "scacchiera"
-//	e il gioco del MasterMind.
-//
-public class MasterMindFrame extends Frame implements MouseListener
-{
-	private int posizioneCorrente			=	0;
-	private int turno						=	0;
-	private int showSecret					=	0;
-	private Plug ilChiodino[][]			=	new Plug[5][16];
-	private Plug chiodinoSegreto[]		=	new Plug[5];
-	private Plug chiodinoPunteggio[][]	=	new Plug[5][16];
-	private static final Color PALETTE[] 	=
-	{
-		Color.black,
-		Color.red,
-		Color.yellow,
-		Color.green,
-		Color.orange,
-		Color.pink,
-		Color.magenta,
-		Color.blue,
-		Color.white,
-		Color.lightGray
-	};
+/**
+ * This class implements a window used to launch a new game, using three
+ * differrent levels of difficulty
+ *
+ * @author ldandrea
+ */
+public class MasterMindFrame extends Frame implements MouseListener {
 
-	private static final int
-			HOLES		=	5,
-			OFFSET		=	54,
-			TURNIMAX	=	16;
+    private int currentPosition   = 0;
+    private int turnNumber          = 0;
+    private int showSecret          = 0;
+    private Pin[][] thePin        = new Pin[5][16];
+    private Pin[] secretPin       = new Pin[5];
+    private Pin[][] scorePin      = new Pin[5][16];
 
-	private int code[]	=	new int[HOLES]; // Il codice da ricercare.
+    private static final Color PALETTE[]
+            = {
+                Color.black,
+                Color.red,
+                Color.yellow,
+                Color.green,
+                Color.orange,
+                Color.pink,
+                Color.magenta,
+                Color.blue,
+                Color.white,
+                Color.lightGray
+            };
 
-	public MasterMindFrame(int frameWidth, int frameHeight, int depth)
-	{
-		int i;
-		int j;
+    private static final int HOLES  = 5,
+            OFFSET                  = 54,
+            MAX_NUMBER_OF_TURNS     = 16;
 
-		setTitle("Mastermind");				// set the frame title
-		setSize(frameWidth,frameHeight);	// set the frame size
-		setResizable(false);				// user can't resize the frame
-		for(i=0; i<HOLES; i++)
-			chiodinoSegreto[i]		=	new Plug(12, 0);
-		for(i=0; i<HOLES; i++)
-			chiodinoSegreto[i].setPosition(30+i*40, 560);
+    private int code[]                   = new int[HOLES]; // Il codice da ricercare.
 
-		for(j=0; j<TURNIMAX; j++)
-			for(i=0; i<HOLES; i++)
-				ilChiodino[i][j]	=	new Plug(12, 0);
-		for(j=0; j<TURNIMAX; j++)
-			for(i=0; i<HOLES; i++)
-				ilChiodino[i][j].setPosition(30+i*40, 50+j*30);
-		for(j=0; j<TURNIMAX; j++)
-			for(i=0; i<HOLES; i++)
-				chiodinoPunteggio[i][j]	=	new Plug(5, 0);
-		for(j=0; j<TURNIMAX; j++)
-			for(i=0; i<HOLES; i++)
-				chiodinoPunteggio[i][j].setPosition(220+i*20, 50+j*30);
+    /**
+     *
+     * @param frameWidth  is the width of the frame
+     * @param frameHeight is the height of the frame
+     * @param depth       is the number of colors used for the new game
+     */
+    public MasterMindFrame(int frameWidth, int frameHeight, int depth) {
+        int i;
+        int j;
 
-		//	Generazione del codice segreto.
-		randomCode(depth);
-		for(i=0; i<HOLES; i++)
-			chiodinoSegreto[i].setColor(code[i]);
+        setTitle("Mastermind");            // set the frame title
+        setSize(frameWidth, frameHeight);  // set the frame size
+        setResizable(false);               // user can't resize the frame
+        for (i = 0; i < HOLES; i++) {
+            secretPin[i] = new Pin(12, 0);
+        }
+        for (i = 0; i < HOLES; i++) {
+            secretPin[i].setPosition(30 + i * 40, 560);
+        }
 
-		// Le prossime istruzioni permettono di chiudere la finestra
-		// quando viene cliccato ilpulsante di chiusura.
-		addWindowListener(new WindowAdapter()
-		{
-			public void windowClosing(WindowEvent e)
-			{
-				dispose();
-			}
-		});
-		addMouseListener(this);	// Aggiunge un "mouse listener"
-								// per catturare gli eventi relativi al mouse
-		setVisible(true);		// Rende visibile la finestra
-	}
+        for (j = 0; j < MAX_NUMBER_OF_TURNS; j++) {
+            for (i = 0; i < HOLES; i++) {
+                thePin[i][j] = new Pin(12, 0);
+            }
+        }
+        for (j = 0; j < MAX_NUMBER_OF_TURNS; j++) {
+            for (i = 0; i < HOLES; i++) {
+                thePin[i][j].setPosition(30 + i * 40, 50 + j * 30);
+            }
+        }
+        for (j = 0; j < MAX_NUMBER_OF_TURNS; j++) {
+            for (i = 0; i < HOLES; i++) {
+                scorePin[i][j] = new Pin(5, 0);
+            }
+        }
+        for (j = 0; j < MAX_NUMBER_OF_TURNS; j++) {
+            for (i = 0; i < HOLES; i++) {
+                scorePin[i][j].setPosition(220 + i * 20, 50 + j * 30);
+            }
+        }
 
-	//	Questo metodo viene invocato automaticamente dalla JVM.
-	public void paint(Graphics g)
-	{
-		//	Disegna la "scacchiera".
-		drawBoard(g);
-		//	Disegna i pulsanti per la selezione dei colori.
-		drawColors(g);
-		//	Disegna i chiodini di gioco.
-		for(int j=0; j<16; j++)
-			for(int i=0; i<5; i++)
-				ilChiodino[i][j].paint(g);
-		//	Disegna i chiodini relativi al punteggio.
-		for(int j=0; j<16; j++)
-			for(int i=0; i<5; i++)
-				chiodinoPunteggio[i][j].paint(g);
-		//	Se e' stato richiesto di vedere il codice segreto
-		//	allora ridisegna i chiodini relativi al codice.
-		if(showSecret==1)
-			for(int i=0; i<5; i++)
-				chiodinoSegreto[i].paint(g);
-	}
+        // Random code pins.
+        randomCode(depth);
+        for (i = 0; i < HOLES; i++) {
+            secretPin[i].setColor(code[i]);
+        }
 
-	//	Disegna il campo di gioco
-	public void drawBoard(Graphics g)
-	{
-		//	Disegna lo sfondo del campo di gioco.
-		g.setColor(new Color(51,51,102));
-		g.fillRoundRect(4,27,264+OFFSET,559,15,15);
-		//	Disegna l'area relativa al codice segreto.
-		g.setColor(new Color(255,204,0));
-		g.fill3DRect(10,533,197,53,true);
-		g.setFont(new Font("SansSerif",Font.BOLD,26));
-		g.setColor(Color.yellow);
-		g.drawString("SECRET CODE",15,569);
-		//	Disegna lo sfondo dell'area per la selezione dei chiodini.
-		g.setColor(new Color (127,151,175));
-		g.fill3DRect(269+OFFSET,27,50,459,true);
-		//	Disegna il pulsante "Go"
-		g.setColor(Color.green);
-		g.fillOval(278+OFFSET-6,436,40,40);
-		g.setColor(Color.black);
-		g.drawOval(278+OFFSET-6,436,40,40);
-		g.setColor(Color.green.darker());
-		g.drawString("Go",280-6+OFFSET,466);
-	}
+        // Listen to the windowClosing event
+        addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                dispose();
+            }
+        });
+        // Adds a "mouse listener" to catch the mouse events
+        addMouseListener(this);
 
-	//	Disegna i pulsanti per la selezione dei colori.
-	public void drawColors(Graphics g)
-	{
-		for(int i=0; i<8; i++)
-		{
-			g.setColor(PALETTE[i+1]);
-			g.fill3DRect(328, 38 + i*45, 40, 30, true);
-		}
-	}
+        // Shows the frame
+        setVisible(true);
+    }
 
-	// 	Questo metodo viene chiamato dalla JVM appena viene premuto il
-	//	pulsante del mouse.
-	public void mousePressed(MouseEvent e)
-	{
-		//	Contiene la posizione corrente del mouse.
-		Point mouse	=	new Point();
+    //	Questo metodo viene invocato automaticamente dalla JVM.
+    public void paint(Graphics g) {
+        // Draws the board
+        drawBoard(g);
+        // Draws the color selection area
+        drawColors(g);
+        // Draws pins of the board
+        for (int j = 0; j < 16; j++) {
+            for (int i = 0; i < 5; i++) {
+                thePin[i][j].paint(g);
+            }
+        }
+        // Draws the score pins
+        for (int j = 0; j < 16; j++) {
+            for (int i = 0; i < 5; i++) {
+                scorePin[i][j].paint(g);
+            }
+        }
+	// Draws the secret code pins, if the user asked for it.
+        if (showSecret == 1) {
+            for (int i = 0; i < 5; i++) {
+                secretPin[i].paint(g);
+            }
+        }
+    }
 
-		//	Ottiene le coordinate del mouse.
-		mouse		=	e.getPoint();
+    /**
+     * Draws the board
+     * @param g
+     */
+    public void drawBoard(Graphics g) {
+        // Draws the background
+        g.setColor(new Color(51, 51, 102));
+        g.fillRoundRect(4, 27, 264 + OFFSET, 559, 15, 15);
 
-		//	Se il mouse e' stato cliccato sull'area del codice segreto
-		//	Allora il codice segreto viene mostrato.
-		if ((mouse.y >= 533) && (mouse.x <= 251))	// is the 'SECRET CODE' area?
-			if(showSecret==0)
-			{
-				showSecret	=	1;
-				repaint();
-			}
-		if((mouse.x>=328)&&(mouse.x<=368))
-		{
-			if(showSecret==0)	//	Se il codice segreto e' stato scoperto
-								//	e' inutile continuare la partita
-			{
-				if((mouse.y>=38)&&(mouse.y<=68))	// Colore 1
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(1);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=83)&&(mouse.y<=113))	// Colore 2
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(2);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=128)&&(mouse.y<=158))	// Colore 3
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(3);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=173)&&(mouse.y<=203))	// Colore 4
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(4);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=218)&&(mouse.y<=248))	// Colore 5
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(5);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=263)&&(mouse.y<=293))	// Colore 6
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(6);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=308)&&(mouse.y<=338))	// Colore 7
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(7);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=353)&&(mouse.y<=383))	// Colore 8
-				{
-					ilChiodino[posizioneCorrente][turno].setColor(8);
-					posizioneCorrente++;
-					repaint();
-				}
-				if((mouse.y>=436)&&(mouse.y<=476))
-				{
-					boolean app=false;
-					for(int i=0; i<5; i++)
-					{
-						if(ilChiodino[i][turno].getColor()==0)
-							app=true;
-					}
-					if(app==false)
-					{
-						Go(turno);
-						repaint();
-						turno = turno+1;
-						posizioneCorrente=0;
-					}
-				}
-				if(posizioneCorrente>4)
-					posizioneCorrente=0;
-			}
-		}
-	}
+        // Draws the secret code area
+        g.setColor(new Color(255, 204, 0));
+        g.fill3DRect(10, 533, 197, 53, true);
+        g.setFont(new Font("SansSerif", Font.BOLD, 26));
+        g.setColor(Color.yellow);
+        g.drawString("SECRET CODE", 15, 569);
 
-	//	Questi quattro metodi non vengono utilizzati ma devono essere
-	//	definiti comunque.
-	public void mouseClicked(MouseEvent e){}
-	public void mouseReleased(MouseEvent e){}
-	public void mouseEntered(MouseEvent e){}
-	public void mouseExited(MouseEvent e){}
+        //Draws the background of the area used to select the color
+        g.setColor(new Color(127, 151, 175));
+        g.fill3DRect(269 + OFFSET, 27, 50, 459, true);
 
-	//	Genera un codice segreto con valori fino a 8.
-	void randomCode()
-	{
-		for(int x=0; x<HOLES; x++)
-			code[x]	=	1+(int)(Math.random()*8);
-	}
+        // Draws the "go" button
+        g.setColor(Color.green);
+        g.fillOval(278 + OFFSET - 6, 436, 40, 40);
+        g.setColor(Color.black);
+        g.drawOval(278 + OFFSET - 6, 436, 40, 40);
+        g.setColor(Color.green.darker());
+        g.drawString("Go", 280 - 6 + OFFSET, 466);
+    }
 
-	//	Genera un codice segreto con valori fino a cNumber.
-	void randomCode(int cNumber)
-	{
-		for(int x=0; x<HOLES; x++)
-			code[x]	=	1+(int)(Math.random()*cNumber);
-	}
+    //	Draws the button to select a color
+    public void drawColors(Graphics g) {
+        for (int i = 0; i < 8; i++) {
+            g.setColor(PALETTE[i + 1]);
+            g.fill3DRect(328, 38 + i * 45, 40, 30, true);
+        }
+    }
 
-	//	Esegue il calcolo del punteggio.
-	public void Go(int turno)
-	{
-		int appoggioChiodini[] = new int[HOLES], appoggioCodice[] = new int[HOLES];
-		int pegCount = 0, pico = 0;
-		int x;
-		int y=0;
+    /**
+     * Called as soon as the user press the mouse button
+     * @param e
+     */
+    public void mousePressed(MouseEvent e) {
+        // Current mouse position
+        Point mouse = new Point();
 
-		//	Eseguiamo una copia della riga corrente e del codice segreto
-		//	in modo da poterli sovrascrivere,
-		for(x=0; x<HOLES; x++)
-		{
-			appoggioChiodini[x] = ilChiodino[x][turno].getColor();
-			appoggioCodice[x] = code[x];
-		}
+        // Get the mouse coordinates
+        mouse = e.getPoint();
 
-		//	Colore esatto nella giusta posizione = un chiodino rosso nello score.
-		for(x=0; x<HOLES; x++)
-			if (appoggioChiodini[x]==appoggioCodice[x])
-			{
-				//	Aggiorna colore esatto in posizione esatta.
-				chiodinoPunteggio[pegCount][turno].setColor(1);
-				pegCount++;
-				pico++;
-				appoggioChiodini[x]	= 98; // scartiamo il valore in modo che
-				appoggioCodice[x]	= 99; // non venga confrontato di nuovo.
-			}
-		//	Colore giusto nella posizione sbagliata = un chidino giallo nello score.
-		for(x=0; x<HOLES; x++)
-			for (y=0; y<HOLES; y++)
-				if (appoggioChiodini[x]==appoggioCodice[y])
-				{
-					// Aggiorna colore esatto in posizione sbagliata.
-					chiodinoPunteggio[pegCount][turno].setColor(2);
-					pegCount++;
-					appoggioChiodini[x] = 98; // scartiamo il valore in modo che
-					appoggioCodice[y]	= 99; // non venga confrontato di nuovo.
-					y = HOLES;				  // esce dal loop interno.
-				}
-		if(pico==HOLES)		//	Partita Vinta???
-		{
-			showSecret=1;
-			repaint();
-			this.getToolkit().beep();	//	Esegue un beep.
-			MessageBox message = new MessageBox( this,"Mastermind",
-				"Partita Vinta. Complimenti!!!" );
-			dispose();
-		}
-		else
-			if(turno>=15)	//	Partita persa???
-			{
-				showSecret=1;
-				repaint();
-				this.getToolkit().beep();	//	Esegue un beep.
-				MessageBox message = new MessageBox( this,"Mastermind",
-					"Partita Persa. Guarda il codice segreto" );
-				dispose();
-			}
-	}
+	// If the user clicked onto the secret code area, then the secret code
+        // must be shown
+        if ((mouse.y >= 533) && (mouse.x <= 251)) // is the 'SECRET CODE' area?
+        {
+            if (showSecret == 0) {
+                showSecret = 1;
+                repaint();
+            }
+        }
+        if ((mouse.x >= 328) && (mouse.x <= 368)) {
+            if (showSecret == 0) // If the secret code has been shown, there aren't
+                // any reason to continue the game
+            {
+                if ((mouse.y >= 38) && (mouse.y <= 68)) // First color
+                {
+                    thePin[currentPosition][turnNumber].setColor(1);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 83) && (mouse.y <= 113)) // Second color
+                {
+                    thePin[currentPosition][turnNumber].setColor(2);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 128) && (mouse.y <= 158)) // Third color
+                {
+                    thePin[currentPosition][turnNumber].setColor(3);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 173) && (mouse.y <= 203)) // Fourth color
+                {
+                    thePin[currentPosition][turnNumber].setColor(4);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 218) && (mouse.y <= 248)) // Fifth color
+                {
+                    thePin[currentPosition][turnNumber].setColor(5);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 263) && (mouse.y <= 293)) // Sixth color
+                {
+                    thePin[currentPosition][turnNumber].setColor(6);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 308) && (mouse.y <= 338)) // Seventh color
+                {
+                    thePin[currentPosition][turnNumber].setColor(7);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 353) && (mouse.y <= 383)) // Eighth color
+                {
+                    thePin[currentPosition][turnNumber].setColor(8);
+                    currentPosition++;
+                    repaint();
+                }
+                if ((mouse.y >= 436) && (mouse.y <= 476)) {
+                    boolean app = false;
+                    for (int i = 0; i < 5; i++) {
+                        if (thePin[i][turnNumber].getColor() == 0) {
+                            app = true;
+                        }
+                    }
+                    if (app == false) {
+                        Go(turnNumber);
+                        repaint();
+                        turnNumber = turnNumber + 1;
+                        currentPosition = 0;
+                    }
+                }
+                if (currentPosition > 4) {
+                    currentPosition = 0;
+                }
+            }
+        }
+    }
+
+    // The following four methods have to be defined, also if the they are
+    // empty because the class is not abstract. (See MouseListener)
+    public void mouseClicked(MouseEvent e) {
+    }
+
+    public void mouseReleased(MouseEvent e) {
+    }
+
+    public void mouseEntered(MouseEvent e) {
+    }
+
+    public void mouseExited(MouseEvent e) {
+    }
+
+    /**
+     * Random secret code generation, range [1..8]
+     */
+    void randomCode() {
+        for (int x = 0; x < HOLES; x++) {
+            code[x] = 1 + (int) (Math.random() * 8);
+        }
+    }
+
+    /**
+     * Random secret code generation, range [1..cNumber]
+     */
+    void randomCode(int cNumber) {
+        for (int x = 0; x < HOLES; x++) {
+            code[x] = 1 + (int) (Math.random() * cNumber);
+        }
+    }
+
+    /**
+     * Computes the score at turn currentTurn
+     * @param currentTurn the turn to use to compute the score
+     */
+    public void Go(int currentTurn) {
+        int[] auxiliaryPins = new int[HOLES];
+        int[] auxiliaryCode = new int[HOLES];
+        int pegCount = 0, pico = 0;
+        int x;
+        int y = 0;
+
+        // Makes a clone of the current raw, so we can overwrite it.
+        for (x = 0; x < HOLES; x++) {
+            auxiliaryPins[x] = thePin[x][currentTurn].getColor();
+            auxiliaryCode[x] = code[x];
+        }
+
+        // Right color in the right position, means a red pin
+        // into the score area
+        for (x = 0; x < HOLES; x++) {
+            if (auxiliaryPins[x] == auxiliaryCode[x]) {
+                // Update Right color in the right position
+                scorePin[pegCount][currentTurn].setColor(1);
+                pegCount++;
+                pico++;
+                auxiliaryPins[x] = 98; // avoid new comparison
+                auxiliaryCode[x] = 99;
+            }
+        }
+        // Right color in the wrong position, means a yellow pin
+        for (x = 0; x < HOLES; x++) {
+            for (y = 0; y < HOLES; y++) {
+                if (auxiliaryPins[x] == auxiliaryCode[y]) {
+                    // Update Right color in the wrong position
+                    scorePin[pegCount][currentTurn].setColor(2);
+                    pegCount++;
+                    auxiliaryPins[x] = 98; // avoid new comparison
+                    auxiliaryCode[y] = 99;
+                    y = HOLES;             // force exit from loop
+                }
+            }
+        }
+        if (pico == HOLES) // check for win
+        {
+            showSecret = 1;
+            repaint();
+            this.getToolkit().beep();
+            MessageBox message = new MessageBox(this, "Mastermind",
+                    "You won. Great!!!");
+            dispose();
+        } else if (currentTurn >= 15) // check for lose
+        {
+            showSecret = 1;
+            repaint();
+            this.getToolkit().beep();
+            MessageBox message = new MessageBox(this, "Mastermind",
+                    "You lose. Take a look at the secret code.");
+            dispose();
+        }
+    }
 }
 
-//
-//	Questa classe implementa un box di dialogo per inviare
-//	messaggi all'utente.
-//
-class MessageBox extends Dialog implements ActionListener
-{
-	private Button okButton;
+/**
+ * Dialog box to send message to the user
+ * @author ldandrea
+ */
+class MessageBox extends Dialog implements ActionListener {
 
-	public MessageBox(Frame f,String title,String message)
-	{
-		//	Costruisce un Box di dialogo.
-		super(f,title,true);
+    private Button okButton;
 
-		//	Imposta il colore di sfondo.
-		setBackground(new Color (127,151,175));
+    public MessageBox(Frame f, String title, String message) {
 
-		//	Il box non può essere ridimensionato dall'utente.
-		setResizable(false);
+        super(f, title, true);
 
-		//	Aggiunge una nuova label con il testo del messaggio.
-		add(new Label(message), BorderLayout.NORTH);
+        // Sets the background color
+        setBackground(new Color(127, 151, 175));
 
-		//	Aggiunge un pulsante per chiudere il box di dialogo.
-		okButton = new Button("    OK    ");
-		okButton.addActionListener(this);
+        // the box cannot be resized
+        setResizable(false);
 
-		// Aggiunge il pulsante.
-		add(okButton, BorderLayout.EAST);
-		pack();
+        // Add a new label with the text of the message to show
+        add(new Label(message), BorderLayout.NORTH);
 
-		//	Mostra il box di dialogo.
-		setVisible(true);
-	}
+        // Add a button to close the dialog window
+        okButton = new Button("    OK    ");
+        okButton.addActionListener(this);
+        add(okButton, BorderLayout.EAST);
+        pack();
 
-	public void actionPerformed(ActionEvent e)
-	{
-		//	Chiude la finestra di dialogo.
-		dispose();
-	}
+        // Sows the dialog box
+        setVisible(true);
+    }
+
+    public void actionPerformed(ActionEvent e) {
+        // Close the dialog box
+        dispose();
+    }
 
 }
 
+/**
+ * Simple Pin class
+ * @author ldandrea
+ */
+class Pin {
+    private int color, x, y, radius;
+    private static final Color PALETTE[]
+            = {
+                Color.black,
+                Color.red,
+                Color.yellow,
+                Color.green,
+                Color.orange,
+                Color.pink,
+                Color.magenta,
+                Color.blue,
+                Color.white,
+                Color.lightGray
+            };
 
+    /**
+     * Default Pin constructur Pos = (0,0), radius = 0, color = 0
+     */
+    public Pin() {
+        x      = 0;
+        y      = 0;
+        radius = 0;
+        color  = 0;
+    }
 
-//
-//	Questa classe implementa il singolo chiodino.
-//
-class Plug
-{
-	private int color, x, y, radius;
-	private static final Color PALETTE[] =
-	{
-		Color.black,
-		Color.red,
-		Color.yellow,
-		Color.green,
-		Color.orange,
-		Color.pink,
-		Color.magenta,
-		Color.blue,
-		Color.white,
-		Color.lightGray
-	};
+    /**
+     * Pin constructor Pos = (0,0)
+     * @param radius the radius for the pin
+     * @param color  the color for the pin
+     */
+    public Pin(int radius, int color) {
+        x = 0;
+        y = 0;
+        this.radius = radius;
+        this.color = color;
+    }
 
-	public Plug()
-	{
-		x		=	0;
-		y		=	0;
-		radius	=	0;
-		color	=	0;
-	}
+    /**
+     * Paint method for the pin
+     * @param g
+     */
+    public void paint(Graphics g) {
+        int ulX = x - radius;	// x for the top left point.
+        int ulY = y - radius;	// y for the top left point.
 
-	public Plug(int radius, int color)
-	{
-		x			=	0;
-		y			=	0;
-		this.radius	=	radius;
-		this.color	=	color;
-	}
+        // d14 e d34 are used to give a pseudo 3d effect.
+        int d14 = radius >> 1;	// diameter/4.
+        int d34 = radius + d14;	// three fourth of diameter.
+        if (color > 0) {
+            g.setColor(PALETTE[color].darker());
+            g.fillOval(ulX, ulY, 2 * radius, 2 * radius);
+            g.setColor(PALETTE[color]);
+            g.fillOval(ulX + d14 - 1, ulY + d14 - 1, d34, d34);
+            g.setColor(Color.white);
+            g.fillOval(x, y, d14, d14);
+        } else {
+            g.setColor(Color.lightGray);
+            g.drawOval(ulX, ulY, 2 * radius - 1, 2 * radius - 1);
+        }
+        g.setColor(Color.black);
+        g.drawOval(ulX, ulY, 2 * radius, 2 * radius);
+    }
 
-	public void paint(Graphics g)
-	{
-		int ulX	=	x-radius ;	// Ascissa dell'angolo in alto a sinistra.
-		int ulY	=	y-radius ;	// Ordinata dell'angolo in alto a sinistra.
-		//	d14 e d34 servono per dare la tridimensionalità.
-		int d14	=	radius >>1;	// un quarto di diametro.
-		int d34	=	radius+d14;	// tre quarti di diametro.
-		if(color>0)
-		{
-			g.setColor(PALETTE[color].darker() );
-			g.fillOval(ulX,ulY,2*radius,2*radius );
-			g.setColor(PALETTE[color] );
-			g.fillOval(ulX+d14-1,ulY+d14-1,d34,d34 );
-			g.setColor(Color.white );
-			g.fillOval(x,y,d14,d14);
-		}
-		else
-		{
-			g.setColor( Color.lightGray );
-			g.drawOval( ulX,ulY,2*radius-1,2*radius-1 );
-		}
-		g.setColor( Color.black );
-		g.drawOval( ulX,ulY,2*radius,2*radius );
-	}
+    /**
+     * Move the pin to the new coordinates
+     * @param newX
+     * @param newY
+     */
+    public void setPosition(int newX, int newY) {
+        x = newX;
+        y = newY;
+    }
 
-	//	Questo metodo permette di cambiare posizione al chiodino.
-	public void setPosition( int newX,int newY )
-	{
-		x = newX ;
-		y = newY ;
-	}
+    /**
+     * Change the pin radius with a new value
+     * @param newR
+     */
+    public void setRadius(int newR) {
+        radius = newR;
+    }
 
-	//	Questo metodo permette di cambiare raggio al chiodino.
-	public void setRadius( int newR )
-	{
-		radius = newR;
-	}
+    /**
+     * Change the pin color with a new value
+     * @param newC
+     */
+    public void setColor(int newC) {
+        color = newC;
+    }
 
-	//	Questo metodo permette di cambiare colore al chiodino.
-	public void setColor(int newC)
-	{
-		color = newC;
-	}
-
-	//	Questo metodo permette di ottenere il colore attuale del chiodino.
-	public int getColor()
-	{
-		return color;
-	}
+    /**
+     * Retrieve the current color of the pin
+     * @return
+     */
+    public int getColor() {
+        return color;
+    }
 
 }
