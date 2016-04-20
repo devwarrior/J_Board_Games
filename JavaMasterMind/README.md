@@ -1,6 +1,6 @@
 # JavaMasterMind
 
-JavaFifteen is my implementation of the MasterMind board game, developed in Java using AWT.
+JavaMasterMind is my implementation of the MasterMind board game, developed in Java using AWT.
 The game offers three levels of difficulty (HARD, MEDIUM, EASY), and let you play multiple games at the same time. 
 
 # How to compile
